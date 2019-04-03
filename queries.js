@@ -1,4 +1,20 @@
-const {Client}  = require('pg');
+const promise = require('bluebird');
+
+const initOptions = {
+    promiseLib: promise,
+    error(error, e) {
+        if (e.cn) {
+            // A connection-related error;
+            //
+            // Connections are reported back with the password hashed,
+            // for safe errors logging, without exposing passwords.
+            console.log('CN:', e.cn);
+            console.log('EVENT:', error.message || error);
+        }
+    }
+};
+
+const pgp = require('pg-promise')(initOptions);
 
 const connectionData = {
     user: 'postgres',
@@ -7,25 +23,29 @@ const connectionData = {
     password: '1',
     port: 5432,
 };
-const client = new Client(connectionData);
-client.connect();
-function getUsers(req, res, next)
+const client = pgp(connectionData);
+
+async function getUsers(req, res, next)
 {
-    client.query('SELECT * FROM minerales')
-        .then(function (data)
-        {
-            res.status(200)
-                .json({
-                    status: 'success',
-                    data: data.rows,
-                });
-        }
-            //client.end()
-        )
-        .catch(err => {
-            return next();
-            //client.end()
+    try
+    {
+        const data = await client.query('SELECT * FROM minerales');
+        res.status(200).json({
+                status: 'success',
+                data: data,
+            });
+        // success
+    }
+    catch (e)
+    {
+        console.log(e.message);
+        res.status(500).json({
+            status: 'error',
+            message: e.message
         });
+        console.log(e);
+        // error
+    }
 }
 
 module.exports={
