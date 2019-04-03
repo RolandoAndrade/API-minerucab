@@ -5,7 +5,6 @@ const initOptions = {
     error(error, e) {
         if (e.cn) {
             // A connection-related error;
-            //
             // Connections are reported back with the password hashed,
             // for safe errors logging, without exposing passwords.
             console.log('CN:', e.cn);
@@ -25,29 +24,11 @@ const connectionData = {
 };
 const client = pgp(connectionData);
 
-async function getUsers(req, res, next)
-{
-    try
-    {
-        const data = await client.query('SELECT * FROM minerales');
-        res.status(200).json({
-                status: 'success',
-                data: data,
-            });
-        // success
-    }
-    catch (e)
-    {
-        console.log(e.message);
-        res.status(500).json({
-            status: 'error',
-            message: e.message
-        });
-        console.log(e);
-        // error
-    }
-}
+
+const User = require('./queries/user');
+const userManager=new User(client);
+
 
 module.exports={
-    getUsers: getUsers
+    getUsers: userManager.getUsers.bind(userManager)
 };
